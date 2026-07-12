@@ -1,0 +1,36 @@
+# Variables y credenciales
+.env
+.env.*
+!.env.example
+
+# Node.js
+node_modules/
+dist/
+coverage/
+
+# Logs
+*.log
+logs/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Visual Studio Code
+.vscode/*.log
+
+# Archivos temporales
+tmp/
+temp/
+backups/
+
+# Credenciales
+credentials/
+shared/secrets/
+
+# Docker local
+docker-data/
+postgres-data/
+
+# n8n
+.n8n/

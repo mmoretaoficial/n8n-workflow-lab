@@ -1,0 +1,177 @@
+{
+  "updatedAt": "2026-07-11T16:59:57.916Z",
+  "createdAt": "2026-07-11T16:25:17.331Z",
+  "id": "qMOHtBGmUuVXw-zhYtlau",
+  "name": "Prueba flujo lab",
+  "description": null,
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"name\": {{ $json.body.name }},\n  \"phone\": {{ $json.body.phone }},\n  \"email\": {{ $json.body.email }},\n  \"description\": {{ $json.body.description }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -48,
+        -80
+      ],
+      "id": "70b203d9-4e25-427c-a88d-5ccbcc54930c",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://mock-api:3001/whatsapp/messages",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"to\": \"={{ $('Edit Fields').item.json.phone }}\",\n  \"message\": \"Su solicitud fue registrada correctamente.\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        368,
+        -80
+      ],
+      "id": "d52493e7-a9da-4e56-a636-5b95e98bbefe",
+      "name": "Mock WhatsApp"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"success\": true,\n  \"message\": \"Lead procesado correctamente\",\n  \"lead\": \"={{ $('Crear lead simulado').item.json.lead }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        592,
+        -80
+      ],
+      "id": "84741545-37c9-4b35-8091-73714c79e337",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "test-lead",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -256,
+        -80
+      ],
+      "id": "000a24fb-c217-480f-be24-b16267433c5e",
+      "name": "Webhook",
+      "webhookId": "862d6142-7d72-4fe5-8598-982e5cb66895"
+    },
+    {
+      "parameters": {
+        "method": "=POST",
+        "url": "http://mock-api:3001/odoo/leads",
+        "sendBody": true,
+        "contentType": "=json",
+        "specifyBody": "json",
+        "bodyParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "jsonBody": "={\n  \"name\": \"{{ $json.name }}\",\n  \"phone\": \"{{ $json.phone }}\",\n  \"email\": \"{{ $json.email }}\",\n  \"description\": \"{{ $json.description }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        160,
+        -80
+      ],
+      "id": "cac1ebc6-e53c-4e76-81e5-e8e960b195b6",
+      "name": "HTTP Request — Crear lead simulado"
+    }
+  ],
+  "connections": {
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request — Crear lead simulado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mock WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request — Crear lead simulado": {
+      "main": [
+        [
+          {
+            "node": "Mock WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": {},
+  "versionId": "f6d3b385-252f-4b71-bafe-e38014e32296",
+  "activeVersionId": null,
+  "versionCounter": 75,
+  "triggerCount": 0,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-07-11T16:25:17.331Z",
+      "createdAt": "2026-07-11T16:25:17.331Z",
+      "role": "workflow:owner",
+      "workflowId": "qMOHtBGmUuVXw-zhYtlau",
+      "projectId": "WpK551L1WOw4U3sP",
+      "project": {
+        "updatedAt": "2026-07-11T16:24:19.294Z",
+        "createdAt": "2026-07-11T16:10:32.556Z",
+        "id": "WpK551L1WOw4U3sP",
+        "name": "XAM Develop Lab <mmoreta.demo@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "671f19cd-8716-481c-a7d5-f067f0bfe82c"
+      }
+    }
+  ]
+}
