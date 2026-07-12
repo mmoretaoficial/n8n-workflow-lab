@@ -1,6 +1,6 @@
 {
   "success": true,
-  "duplicate": false,
+  "duplicate": true,
   "lead": {
     "id": 4821,
     "name": "Cliente de prueba",
