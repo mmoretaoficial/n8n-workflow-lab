@@ -1,27 +1,33 @@
 # Instrucciones del agente
 
-## Contexto
+Antes de realizar cualquier trabajo:
 
-Este repositorio es un laboratorio de desarrollo y pruebas para workflows de n8n.
+1. Leer `README.md`.
+2. Leer `docs/agent-prompt.md`.
+3. Leer `docs/testing-guide.md`.
+4. Leer la solicitud específica ubicada en `docs/requests/`.
+5. Confirmar la rama Git activa.
+6. No utilizar credenciales productivas.
+7. No modificar `main` ni `develop` directamente.
+8. Crear o modificar archivos solamente en la rama feature o fix activa.
+9. Ejecutar las validaciones antes de finalizar.
+10. Documentar el resultado en `docs/workflows/`.
 
-## Reglas obligatorias
+## Ubicación de artefactos
 
-1. Leer `docs/agent-prompt.md` antes de comenzar.
-2. No utilizar credenciales productivas.
-3. No modificar el volumen interno de n8n manualmente.
-4. Guardar los workflows exportados en `workflows/`.
-5. Crear datos simulados en `shared/fixtures/`.
-6. Crear respuestas simuladas en `shared/responses/`.
-7. Crear esquemas de validación en `shared/schemas/`.
-8. Documentar cada workflow en `docs/workflows/`.
-9. Agregar pruebas para flujos exitosos y fallidos.
-10. Verificar que Docker y la Mock API funcionen antes de probar.
+- Workflow n8n: `workflows/development/`
+- Solicitud funcional: `docs/requests/`
+- Documentación final: `docs/workflows/`
+- Datos de entrada: `shared/fixtures/`
+- Respuestas simuladas: `shared/responses/`
+- Esquemas: `shared/schemas/`
+- Mock API: `mock-api/src/`
+- Pruebas: `mock-api/tests/`
 
-## Convenciones
+## Prohibiciones
 
-- Nombres de workflows: `[AMBIENTE] - [CLIENTE] - [PROCESO]`
-- Ejemplo: `DEV - WGroup - WhatsApp Lead to Odoo`
-- Variables de entorno en mayúsculas.
-- No escribir tokens directamente dentro de nodos.
-- Utilizar nombres descriptivos para todos los nodos.
-- Incluir un nodo de manejo de errores cuando sea necesario.
+- No escribir tokens en JSON, TypeScript o Markdown.
+- No conectar producción durante pruebas.
+- No borrar workflows sin revisar su contenido.
+- No hacer push directamente a `main`.
+- No activar workflows automáticamente.
