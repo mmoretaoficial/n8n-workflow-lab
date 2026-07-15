@@ -1,0 +1,308 @@
+{
+  "updatedAt": "2026-07-12T00:00:00.000Z",
+  "createdAt": "2026-07-12T00:00:00.000Z",
+  "id": "_L-8FFKFo3uEHu6P",
+  "name": "DEV - MMoreta - Angela Lead to Odoo",
+  "description": "Recibe un lead simulado de WhatsApp, lo valida, lo normaliza, lo crea en la Mock API de Odoo y confirma por la Mock API de WhatsApp.",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "test-lead",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -624,
+        -80
+      ],
+      "id": "71cf997e-3e7c-4631-96e7-3a8778754c8f",
+      "name": "Webhook",
+      "webhookId": "ce1d98d3-ab2c-454c-84a7-208781069bfe"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const items = $input.all();\n\nreturn items.map((item) => {\n  const body = item.json.body ?? {};\n  const name = typeof body.name === \"string\" ? body.name.trim() : \"\";\n  const phone = typeof body.phone === \"string\" ? body.phone.trim() : \"\";\n  const email = typeof body.email === \"string\" ? body.email.trim() : \"\";\n  const description = typeof body.description === \"string\" ? body.description.trim() : \"\";\n\n  const missingFields = [];\n  if (!name) missingFields.push(\"name\");\n  if (!phone) missingFields.push(\"phone\");\n\n  return {\n    json: {\n      isValid: missingFields.length === 0,\n      validationError: missingFields.length\n        ? `Los campos obligatorios faltantes: ${missingFields.join(\", \")}.`\n        : null,\n      name,\n      phone,\n      email: email || null,\n      description: description || null\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -416,
+        -80
+      ],
+      "id": "a314ba23-0e6a-4823-bf16-df549865a6c6",
+      "name": "Validate Lead"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e7b0411d-97dc-421f-a72a-498f010d2d81",
+              "leftValue": "={{ $json.isValid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -208,
+        -80
+      ],
+      "id": "2c45570f-6125-47a5-9f49-d8f140ecc311",
+      "name": "Is Valid?"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: false, stage: 'validation', error: $json.validationError } }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -208,
+        160
+      ],
+      "id": "6e81c5bf-cb42-4581-a76d-68be2110ad69",
+      "name": "Respond Validation Error"
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6f819bb0-0348-4fac-b913-e9d066f712cf",
+              "name": "phone",
+              "type": "string",
+              "value": "={{ $json.phone.replace(/[^\\d]/g, '') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        0,
+        -80
+      ],
+      "id": "368ca393-5b21-4a4b-9e59-03dbf3d4c84d",
+      "name": "Normalize Phone"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://mock-api:3001/odoo/leads",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { name: $json.name, phone: $json.phone, email: $json.email, description: $json.description } }}",
+        "options": {
+          "timeout": 5000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "onError": "continueErrorOutput",
+      "position": [
+        208,
+        -80
+      ],
+      "id": "9a02ac13-a82d-4530-b9d1-5a64d12f9a93",
+      "name": "Create Lead in Odoo"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: false, stage: 'odoo', error: $json.error } }}",
+        "options": {
+          "responseCode": 502
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        208,
+        160
+      ],
+      "id": "6db27842-bd51-4ab0-a82a-c6008e42c21c",
+      "name": "Respond Odoo Error"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://mock-api:3001/whatsapp/messages",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { to: $('Normalize Phone').item.json.phone, message: 'Su solicitud fue registrada correctamente.' } }}",
+        "options": {
+          "timeout": 5000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "onError": "continueErrorOutput",
+      "position": [
+        416,
+        -80
+      ],
+      "id": "869332e4-370b-4114-80bd-b20593127a14",
+      "name": "Send WhatsApp Confirmation"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: true, message: 'Lead procesado correctamente', lead: $('Create Lead in Odoo').item.json.lead, duplicate: $('Create Lead in Odoo').item.json.duplicate, notificationSent: true } }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        624,
+        -80
+      ],
+      "id": "5e192369-55c1-4fb3-8ce3-d91e7f6179e4",
+      "name": "Respond Success"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: true, message: 'Lead creado, pero no se pudo enviar la confirmacion por WhatsApp.', lead: $('Create Lead in Odoo').item.json.lead, duplicate: $('Create Lead in Odoo').item.json.duplicate, notificationSent: false, notificationError: $json.error } }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        624,
+        160
+      ],
+      "id": "d8b029a8-eaca-48b7-872d-7ed9f2513405",
+      "name": "Respond Success (No Notification)"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Lead": {
+      "main": [
+        [
+          {
+            "node": "Is Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Valid?": {
+      "main": [
+        [
+          {
+            "node": "Normalize Phone",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Validation Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Phone": {
+      "main": [
+        [
+          {
+            "node": "Create Lead in Odoo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Lead in Odoo": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Odoo Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send WhatsApp Confirmation": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Success (No Notification)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": {},
+  "versionId": "edc20a2f-591b-445d-866e-98134b14aba6",
+  "triggerCount": 0,
+  "tags": []
+}

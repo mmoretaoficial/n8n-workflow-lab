@@ -1,0 +1,12 @@
+{
+  "success": true,
+  "duplicate": false,
+  "lead": {
+    "id": 4821,
+    "name": "Cliente de prueba",
+    "phone": "18295550000",
+    "email": "cliente@example.com",
+    "description": "Interesado en Odoo 18",
+    "stage": "Nuevo"
+  }
+}
