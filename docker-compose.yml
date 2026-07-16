@@ -92,6 +92,8 @@ services:
       META_IG_ACCESS_TOKEN: ${META_IG_ACCESS_TOKEN}
       N8N_BLOCK_ENV_ACCESS_IN_NODE: ${N8N_BLOCK_ENV_ACCESS_IN_NODE}
 
+      NODE_FUNCTION_ALLOW_BUILTIN: fs
+
     volumes:
       - n8n_data:/home/node/.n8n
       - ./workflows:/files/workflows
