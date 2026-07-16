@@ -1,0 +1,718 @@
+{
+  "id": "govvwANKVQrjXmit",
+  "name": "Ángela Community Manager - Instagram API",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "angela-community-manager",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "1",
+      "name": "Webhook - Instagram Manager",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -980,
+        0
+      ],
+      "webhookId": "2db8847c-9a67-4180-8a67-77e35b7b6f57"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $json.body ?? $json;\n\nconst action = String(input.action ?? '').trim();\nconst allowed = [\n  'get_profile',\n  'get_media',\n  'get_media_insights',\n  'prepare_image_post',\n  'publish_image'\n];\n\nif (!allowed.includes(action)) {\n  throw new Error(`Acción no válida (${action}). Opciones permitidas - ${allowed.join(', ')}`);\n}\n\nconst approved = input.approved === true;\nconst limit = Math.min(Math.max(Number(input.limit ?? 12), 1), 50);\n\nif (['prepare_image_post', 'publish_image'].includes(action)) {\n  if (!input.image_url || !/^https:\\/\\//i.test(input.image_url)) {\n    throw new Error('image_url es obligatorio y debe ser una URL pública HTTPS.');\n  }\n  if (!input.caption || String(input.caption).trim().length < 3) {\n    throw new Error('caption es obligatorio.');\n  }\n}\n\nif (action === 'publish_image' && !approved) {\n  throw new Error('Para publicar la imagen primero debes aprobar el borrador (approved = true).');\n}\n\nif (action === 'get_media_insights' && !input.media_id) {\n  throw new Error('media_id es obligatorio para get_media_insights.');\n}\n\nreturn [{\n  json: {\n    action,\n    approved,\n    limit,\n    image_url: input.image_url ?? null,\n    caption: input.caption ?? null,\n    media_id: input.media_id ?? null,\n    metrics: input.metrics ?? 'reach,views,likes,comments,saved,shares,total_interactions',\n    request_id: input.request_id ?? `ig-${Date.now()}`,\n    requested_by: input.requested_by ?? 'manual',\n    requested_at: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "2",
+      "name": "Validar y normalizar solicitud",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "onError": "continueErrorOutput",
+      "position": [
+        -760,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "get_profile",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "get_profile"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "get_media",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "get_media"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "get_media_insights",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "get_media_insights"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "prepare_image_post",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "prepare_image_post"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "publish_image",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "publish_image"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3",
+      "name": "Enrutar acción",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -520,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://graph.facebook.com/' + ($env.META_GRAPH_API_VERSION || 'v25.0') + '/' + $env.META_IG_USER_ID }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "username,name,biography,followers_count,follows_count,media_count,profile_picture_url,website"
+            },
+            {
+              "name": "access_token",
+              "value": "={{ $env.META_IG_ACCESS_TOKEN }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4",
+      "name": "Meta - Obtener perfil",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "onError": "continueErrorOutput",
+      "position": [
+        -240,
+        -320
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://graph.facebook.com/' + ($env.META_GRAPH_API_VERSION || 'v25.0') + '/' + $env.META_IG_USER_ID + '/media' }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "id,caption,media_type,media_product_type,media_url,permalink,thumbnail_url,timestamp,like_count,comments_count"
+            },
+            {
+              "name": "limit",
+              "value": "={{ $json.limit }}"
+            },
+            {
+              "name": "access_token",
+              "value": "={{ $env.META_IG_ACCESS_TOKEN }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5",
+      "name": "Meta - Obtener publicaciones",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "onError": "continueErrorOutput",
+      "position": [
+        -240,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://graph.facebook.com/' + ($env.META_GRAPH_API_VERSION || 'v25.0') + '/' + $json.media_id + '/insights' }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "metric",
+              "value": "={{ $json.metrics }}"
+            },
+            {
+              "name": "access_token",
+              "value": "={{ $env.META_IG_ACCESS_TOKEN }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6",
+      "name": "Meta - Métricas publicación",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "onError": "continueErrorOutput",
+      "position": [
+        -240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    status: 'pending_approval',\n    request_id: $json.request_id,\n    preview: {\n      image_url: $json.image_url,\n      caption: $json.caption\n    },\n    next_step: {\n      action: 'publish_image',\n      approved: true,\n      image_url: $json.image_url,\n      caption: $json.caption,\n      request_id: $json.request_id,\n      requested_by: $json.requested_by\n    },\n    warning: 'La publicación todavía no fue enviada a Instagram.'\n  }\n}];"
+      },
+      "id": "7",
+      "name": "Preparar borrador",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://graph.facebook.com/' + ($env.META_GRAPH_API_VERSION || 'v25.0') + '/' + $env.META_IG_USER_ID + '/media' }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "image_url",
+              "value": "={{ $json.image_url }}"
+            },
+            {
+              "name": "caption",
+              "value": "={{ $json.caption }}"
+            },
+            {
+              "name": "access_token",
+              "value": "={{ $env.META_IG_ACCESS_TOKEN }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8",
+      "name": "Meta - Crear contenedor imagen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "onError": "continueErrorOutput",
+      "position": [
+        -240,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 5,
+        "unit": "seconds"
+      },
+      "id": "9",
+      "name": "Esperar procesamiento",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        320
+      ],
+      "webhookId": "dcafcb77-2d6c-4216-aff1-cf4d7f36b024"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://graph.facebook.com/' + ($env.META_GRAPH_API_VERSION || 'v25.0') + '/' + $env.META_IG_USER_ID + '/media_publish' }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "creation_id",
+              "value": "={{ $json.id }}"
+            },
+            {
+              "name": "access_token",
+              "value": "={{ $env.META_IG_ACCESS_TOKEN }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "10",
+      "name": "Meta - Publicar imagen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "onError": "continueErrorOutput",
+      "position": [
+        240,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    success: true,\n    platform: 'instagram',\n    published_media_id: $json.id,\n    published_at: new Date().toISOString(),\n    message: 'Publicación enviada correctamente a Instagram.'\n  }\n}];"
+      },
+      "id": "11",
+      "name": "Confirmar publicación",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "12",
+      "name": "Responder - Perfil",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        40,
+        -320
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "13",
+      "name": "Responder - Publicaciones",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        40,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "14",
+      "name": "Responder - Métricas",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        40,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "15",
+      "name": "Responder - Borrador",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        40,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "16",
+      "name": "Responder - Publicado",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        720,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $json;\nconst message = typeof raw.error === 'string'\n  ? raw.error\n  : (raw.error?.message || raw.message || 'Solicitud inválida.');\n\nreturn [{\n  json: {\n    success: false,\n    error: message\n  }\n}];"
+      },
+      "id": "17",
+      "name": "Formatear error de validación",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -520,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "18",
+      "name": "Responder - Error validación",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -240,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $json;\nconst message = raw.error?.message\n  || (typeof raw.error === 'string' ? raw.error : null)\n  || raw.message\n  || 'Error al comunicarse con la API de Meta.';\n\nreturn [{\n  json: {\n    success: false,\n    error: message\n  }\n}];"
+      },
+      "id": "19",
+      "name": "Formatear error de Meta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        40,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 502
+        }
+      },
+      "id": "20",
+      "name": "Responder - Error Meta",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        320,
+        560
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook - Instagram Manager": {
+      "main": [
+        [
+          {
+            "node": "Validar y normalizar solicitud",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar y normalizar solicitud": {
+      "main": [
+        [
+          {
+            "node": "Enrutar acción",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Formatear error de validación",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrutar acción": {
+      "main": [
+        [
+          {
+            "node": "Meta - Obtener perfil",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Meta - Obtener publicaciones",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Meta - Métricas publicación",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Preparar borrador",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Meta - Crear contenedor imagen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Meta - Obtener perfil": {
+      "main": [
+        [
+          {
+            "node": "Responder - Perfil",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Formatear error de Meta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Meta - Obtener publicaciones": {
+      "main": [
+        [
+          {
+            "node": "Responder - Publicaciones",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Formatear error de Meta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Meta - Métricas publicación": {
+      "main": [
+        [
+          {
+            "node": "Responder - Métricas",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Formatear error de Meta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar borrador": {
+      "main": [
+        [
+          {
+            "node": "Responder - Borrador",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Meta - Crear contenedor imagen": {
+      "main": [
+        [
+          {
+            "node": "Esperar procesamiento",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Formatear error de Meta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Esperar procesamiento": {
+      "main": [
+        [
+          {
+            "node": "Meta - Publicar imagen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Meta - Publicar imagen": {
+      "main": [
+        [
+          {
+            "node": "Confirmar publicación",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Formatear error de Meta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirmar publicación": {
+      "main": [
+        [
+          {
+            "node": "Responder - Publicado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatear error de validación": {
+      "main": [
+        [
+          {
+            "node": "Responder - Error validación",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatear error de Meta": {
+      "main": [
+        [
+          {
+            "node": "Responder - Error Meta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
+  },
+  "versionId": "389ac3fb-f8b4-4d7d-8865-5f1b4e220f8c",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

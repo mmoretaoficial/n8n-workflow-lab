@@ -87,6 +87,11 @@ services:
       EXECUTIONS_DATA_PRUNE: "true"
       EXECUTIONS_DATA_MAX_AGE: 168
 
+      META_GRAPH_API_VERSION: ${META_GRAPH_API_VERSION}
+      META_IG_USER_ID: ${META_IG_USER_ID}
+      META_IG_ACCESS_TOKEN: ${META_IG_ACCESS_TOKEN}
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: ${N8N_BLOCK_ENV_ACCESS_IN_NODE}
+
     volumes:
       - n8n_data:/home/node/.n8n
       - ./workflows:/files/workflows
